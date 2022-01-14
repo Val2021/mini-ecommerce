@@ -1,7 +1,9 @@
 from sqlalchemy import Table
 from sqlalchemy.orm import mapper, relationship
 from sqlalchemy.sql.schema import Column, ForeignKey
-from sqlalchemy.sql.sqltypes import Boolean, Float, Integer, String,DateTime,BOOLEAN
+from sqlalchemy.sql.sqltypes import Boolean, Float, Integer, String,DateTime,BOOLEAN,Date
+from src.domain.address.model import Address
+from src.domain.customer.model import Customer
 from src.domain.payment_method.model import PaymentMethod
 from src.domain.product_discount.model import ProductDiscount
 from src.adapter.database import Base
@@ -14,6 +16,22 @@ from src.domain.supplier.model import Supplier
 
 metadata = Base.metadata
 
+table_category = Table(
+    'categories',
+    metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('name', String(20)),
+)
+
+
+table_supplier = Table(
+    'suppliers',
+    metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('name', String(20)),
+)
+
+
 table_product = Table(
   'products', 
   metadata, 
@@ -22,22 +40,11 @@ table_product = Table(
   Column('technical_details', String(255)),
   Column('price', Float(10, 2)),
   Column('visible', Boolean),
+  Column('category_id', ForeignKey('categories.id')),
+  Column('supplier_id', ForeignKey('suppliers.id'))
 )
 
 
-table_category = Table(
-  'categories', 
-  metadata, 
-  Column('id',Integer, primary_key=True,autoincrement=True),
-  Column('name',String(45))
-)
-
-table_supplier = Table(
-  'suppliers', 
-  metadata, 
-  Column('id',Integer, primary_key=True,autoincrement=True),
-  Column('name',String(45))
-)
 
 table_paymentmethod = Table(
   'paymentmethods', 
@@ -69,19 +76,56 @@ table_productdiscount = Table(
   Column('payment_method_id',ForeignKey('paymentmethods.id')),
   )
 
+table_customer = Table(
+  'customers', 
+  metadata,
+  Column("id",Integer, primary_key=True),
+  Column("first_name",String(45)),
+  Column("last_name",String(45)),
+  Column("phone_number",String(15)),
+  Column("genre",String(45)),
+  Column("document_id",String(45)),
+  Column("birth_date",Date)
+    )
+
+
+table_address = Table(
+  'addresses', 
+   metadata,
+  Column("id",Integer, primary_key=True),
+  Column('address',String(255)),
+  Column('city',String(45)),
+  Column('state',String(45)),
+  Column('number',String(10)),
+  Column('zipcode',String(6)),
+  Column('neighbourhood',String(45)),
+  Column('primary',Boolean),
+  Column("customer_id", ForeignKey("customers.id")),
+)
+
 def start_mapper():
+    category_mapper = mapper(Category, table_category)
+    supplier_mapper = mapper(Supplier, table_supplier)
+    payment_method_mapper = mapper(PaymentMethod,table_paymentmethod)
+    address_mapper = mapper(Address, table_address)
 
-  product_mapper = mapper(Product, table_product)
-  paymentmethod_mapper = mapper(PaymentMethod, table_paymentmethod)
+    product_discount_mapper = mapper(
+        ProductDiscount,
+        table_productdiscount,
+        properties={
+            "payment_method": relationship(payment_method_mapper),
+        },
+    )
 
-  # mapper(Product, table_product)
-  # mapper(PaymentMethod, table_paymentmethod)
-  mapper(Category, table_category)
-  mapper(Supplier, table_supplier)
-  mapper(Coupon, table_coupon)
-  mapper(ProductDiscount, table_productdiscount, properties={
-    'product':relationship(product_mapper),
-    'payment_method':relationship(paymentmethod_mapper)
+    mapper(
+        Product,
+        table_product,
+        properties={
+            "category": relationship(category_mapper),
+            "supplier": relationship(supplier_mapper),
+            "discounts": relationship(product_discount_mapper),
+        },
+    )
 
-  })
-
+    mapper(Coupon, table_coupon)
+    mapper(Customer, table_customer, properties={"address": relationship(address_mapper)})

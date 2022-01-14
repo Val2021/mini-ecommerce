@@ -3,12 +3,12 @@ version: '3.8'
 services:
   api:
     build: .
-    container_name: fast_api
-    command: uvicorn app.main:app --host=0.0.0.0 --port=80 --reload
+    container_name: ecommerce_clean
+    command: uvicorn src.entrypoint.fastapi:app --host=0.0.0.0 --port=80 --reload
     volumes:
       - .:/app
     ports:
-      - "8080:80"
+      - "5050:80"
     environment:
       - APP_NAME=FastAPI_Compose
       - DB_USERNAME=user
@@ -19,7 +19,7 @@ services:
       - db
   db:
     image: postgres:13-alpine
-    container_name: fast_api_db
+    container_name: fast_api_db_new
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
